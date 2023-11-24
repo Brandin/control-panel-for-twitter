@@ -111,6 +111,7 @@ const config = {
   navBaseFontSize: true,
   navDensity: 'default',
   showRelevantPeople: false,
+  hideSelfRetweets: false,
   // Mobile only
   hideAppNags: true,
   hideMessagesBottomNavItem: false,
@@ -3960,9 +3961,11 @@ function onTimelineChange($timeline, page, options = {}) {
     let isReply = false
     /** @type {boolean} */
     let isBlueTweet = false
+    let isRetweet = false
 
     if ($tweet != null) {
       itemType = getTweetType($tweet, isOnProfileTimeline)
+
       if (timelineHasSpecificHandling) {
         isReply = isReplyToPreviousTweet($tweet)
         if (isReply && hidPreviousItem != null) {
@@ -4028,8 +4031,24 @@ function onTimelineChange($timeline, page, options = {}) {
       }
     }
 
+    if (itemType == 'RETWEET') {
+      isRetweet = true
+      if (isRetweet && config.hideSelfRetweets) {
+        let retweetUsername = $tweet.querySelector('span[data-testid="socialContext"]').parentElement.getAttribute('href').substring(1)
+        let originalTweetHandle = $tweet.innerText.split('·')[0].substring(1)
+        originalTweetHandle = originalTweetHandle.substring(originalTweetHandle.indexOf('@') + 1)
+        retweetUsername = retweetUsername.trim()
+        originalTweetHandle = originalTweetHandle.trim()
+        retweetUsername = retweetUsername.toLowerCase()
+        originalTweetHandle = originalTweetHandle.toLowerCase()
+        if (retweetUsername == originalTweetHandle) {
+          hideItem = true
+        }
+      }
+    }
+
     if (debug && itemType != null) {
-      $item.firstElementChild.dataset.itemType = `${itemType}${isReply ? ' / REPLY' : ''}${isBlueTweet ? ' / BLUE' : ''}`
+      $item.firstElementChild.dataset.itemType = `${hideItem} // ${itemType}${isReply ? ' / REPLY' : ''}${isBlueTweet ? ' / BLUE' : ''}`
     }
 
     // Assume a non-identified item following an identified item is related
